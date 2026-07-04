@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寒武纪(688256) 2026年6月 K线图</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; font-family: 'Microsoft YaHei', sans-serif; display: flex; justify-content: center; padding: 20px; }
+  .container { width: 1100px; background: #16213e; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden; }
+  .header { padding: 20px 30px; background: linear-gradient(135deg, #0f3460, #16213e); border-bottom: 2px solid #e94560; }
+  .header h1 { color: #fff; font-size: 24px; font-weight: 600; }
+  .header .info { color: #a0aec0; font-size: 14px; margin-top: 6px; }
+  .header .info span { color: #e94560; font-weight: 600; }
+  .stats-bar { display: flex; padding: 15px 30px; background: rgba(15,52,96,0.5); gap: 30px; flex-wrap: wrap; }
+  .stat-item { color: #cbd5e0; font-size: 14px; }
+  .stat-item .label { color: #718096; }
+  .stat-item .value { color: #fff; font-weight: 600; }
+  .stat-item .value.up { color: #e94560; }
+  .stat-item .value.down { color: #48bb78; }
+  #chart { width: 100%; height: 620px; }
+  .footer { padding: 12px 30px; background: #0f3460; color: #718096; font-size: 12px; text-align: center; }
+  .footer a { color: #a0aec0; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>寒武纪 (688256.SH) — 日K线图</h1>
+    <div class="info">2026年6月 | 行业: <span>半导体</span> | 地区: 北京 | 上市日期: 2020-07-20</div>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div id="chart"></div>
+  <div class="footer">数据来源: Tushare Pro | 生成时间: 2026-06-28 | 仅供参考，不构成投资建议</div>
+</div>
+
+<script>
+// ============ 原始数据 ============
+var rawData = [
+  { date:'2026-06-01', open:1326.00, close:1238.00, low:1238.00, high:1326.00, vol:134896.09, amount:17200897.814 },
+  { date:'2026-06-02', open:1246.00, close:1300.00, low:1245.00, high:1319.58, vol:124338.95, amount:16088931.664 },
+  { date:'2026-06-03', open:1292.30, close:1378.10, low:1291.00, high:1428.01, vol:165598.05, amount:22683725.029 },
+  { date:'2026-06-04', open:1365.00, close:1358.90, low:1347.00, high:1400.00, vol:88415.60,  amount:12121114.904 },
+  { date:'2026-06-05', open:1342.00, close:1299.20, low:1287.34, high:1407.77, vol:116354.51, amount:15620599.199 },
+  { date:'2026-06-08', open:1239.30, close:1250.36, low:1230.08, high:1298.88, vol:114170.55, amount:14376345.578 },
+  { date:'2026-06-09', open:1279.00, close:1270.01, low:1239.02, high:1285.80, vol:106731.85, amount:13514130.551 },
+  { date:'2026-06-10', open:1300.00, close:1231.00, low:1224.17, high:1349.90, vol:138327.46, amount:17771830.139 },
+  { date:'2026-06-11', open:1221.96, close:1219.50, low:1199.00, high:1255.00, vol:111819.93, amount:13632001.124 },
+  { date:'2026-06-12', open:1258.00, close:1240.00, low:1202.00, high:1260.00, vol:149765.97, amount:18376258.023 },
+  { date:'2026-06-15', open:1253.00, close:1335.00, low:1238.88, high:1345.99, vol:154373.04, amount:20204543.688 },
+  { date:'2026-06-16', open:1335.50, close:1306.99, low:1297.79, high:1335.91, vol:99671.79,  amount:13096230.889 },
+  { date:'2026-06-17', open:1290.40, close:1320.00, low:1271.10, high:1329.87, vol:133225.75, amount:17255115.422 },
+  { date:'2026-06-18', open:1319.72, close:1507.46, low:1313.20, high:1540.00, vol:221694.16, amount:32153278.755 },
+  { date:'2026-06-22', open:1480.00, close:1456.99, low:1420.00, high:1494.94, vol:150356.73, amount:21882369.235 },
+  { date:'2026-06-23', open:1453.00, close:1413.00, low:1394.84, high:1506.00, vol:138375.63, amount:20001635.530 },
+  { date:'2026-06-24', open:1402.00, close:1453.00, low:1378.00, high:1468.88, vol:140656.44, amount:20184662.912 },
+  { date:'2026-06-25', open:1460.00, close:1505.00, low:1436.00, high:1536.25, vol:159821.84, amount:23799059.014 },
+  { date:'2026-06-26', open:1482.00, close:1458.00, low:1415.00, high:1518.98, vol:124352.36, amount:18243658.225 }
+];
+
+// ============ 计算均线 ============
+function calcMA(data, period) {
+  var result = [];
+  for (var i = 0; i < data.length; i++) {
+    if (i < period - 1) { result.push(null); continue; }
+    var sum = 0;
+    for (var j = 0; j < period; j++) sum += data[i - j].close;
+    result.push(+(sum / period).toFixed(2));
+  }
+  return result;
+}
+
+var dates = rawData.map(d => d.date);
+var kData = rawData.map(d => [d.open, d.close, d.low, d.high]);
+var volData = rawData.map(d => [d.vol, d.close >= d.open ? 1 : -1]);
+var ma5 = calcMA(rawData, 5);
+var ma10 = calcMA(rawData, 10);
+var ma20 = calcMA(rawData, 20);
+
+// ============ 统计信息 ============
+var firstClose = rawData[0].close;
+var lastClose = rawData[rawData.length - 1].close;
+var monthChange = lastClose - firstClose;
+var monthPct = ((monthChange / firstClose) * 100).toFixed(2);
+var maxPrice = Math.max(...rawData.map(d => d.high));
+var minPrice = Math.min(...rawData.map(d => d.low));
+var totalVol = rawData.reduce((s, d) => s + d.vol, 0);
+var totalAmount = rawData.reduce((s, d) => s + d.amount, 0);
+var upDays = rawData.filter(d => d.close >= d.open).length;
+var downDays = rawData.filter(d => d.close < d.open).length;
+
+document.getElementById('statsBar').innerHTML =
+  '<div class="stat-item"><span class="label">月初开盘</span> <span class="value">¥' + rawData[0].open.toFixed(2) + '</span></div>' +
+  '<div class="stat-item"><span class="label">月末收盘</span> <span class="value">¥' + lastClose.toFixed(2) + '</span></div>' +
+  '<div class="stat-item"><span class="label">月涨跌幅</span> <span class="value ' + (monthChange >= 0 ? 'up' : 'down') + '">' + (monthChange >= 0 ? '+' : '') + monthChange.toFixed(2) + ' (' + monthPct + '%)</span></div>' +
+  '<div class="stat-item"><span class="label">月最高</span> <span class="value">¥' + maxPrice.toFixed(2) + '</span></div>' +
+  '<div class="stat-item"><span class="label">月最低</span> <span class="value">¥' + minPrice.toFixed(2) + '</span></div>' +
+  '<div class="stat-item"><span class="label">总成交额</span> <span class="value">' + (totalAmount / 100000000).toFixed(2) + '亿</span></div>' +
+  '<div class="stat-item"><span class="label">阳线/阴线</span> <span class="value up">' + upDays + '</span><span class="label"> / </span><span class="value down">' + downDays + '</span></div>';
+
+// ============ ECharts 图表 ============
+var chart = echarts.init(document.getElementById('chart'));
+var upColor = '#e94560';
+var downColor = '#48bb78';
+var upBorderColor = '#e94560';
+var downBorderColor = '#48bb78';
+
+var option = {
+  backgroundColor: '#16213e',
+  animation: true,
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: { type: 'cross' },
+    backgroundColor: 'rgba(15,52,96,0.95)',
+    borderColor: '#e94560',
+    textStyle: { color: '#fff', fontSize: 13 },
+    formatter: function(params) {
+      var i = params[0].dataIndex;
+      var d = rawData[i];
+      var isUp = d.close >= d.open;
+      var html = '<div style="font-weight:600;font-size:15px;margin-bottom:8px;border-bottom:1px solid #e94560;padding-bottom:4px;">' + d.date + '</div>';
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">开盘</td><td style="color:#fff;text-align:right;">' + d.open.toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">最高</td><td style="color:#fff;text-align:right;">' + d.high.toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">最低</td><td style="color:#fff;text-align:right;">' + d.low.toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">收盘</td><td style="color:' + (isUp ? upColor : downColor) + ';text-align:right;font-weight:600;">' + d.close.toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">涨跌</td><td style="color:' + (isUp ? upColor : downColor) + ';text-align:right;">' + (d.close - d.open).toFixed(2) + '</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">成交量</td><td style="color:#fff;text-align:right;">' + (d.vol / 10000).toFixed(2) + '万手</td></tr>';
+      html += '<tr><td style="color:#718096;padding:2px 8px;">成交额</td><td style="color:#fff;text-align:right;">' + (d.amount / 100000000).toFixed(2) + '亿</td></tr>';
+      if (ma5[i] != null) html += '<tr><td style="color:#718096;padding:2px 8px;">MA5</td><td style="color:#f6ad55;text-align:right;">' + ma5[i].toFixed(2) + '</td></tr>';
+      if (ma10[i] != null) html += '<tr><td style="color:#718096;padding:2px 8px;">MA10</td><td style="color:#63b3ed;text-align:right;">' + ma10[i].toFixed(2) + '</td></tr>';
+      html += '</table>';
+      return html;
+    }
+  },
+  axisPointer: {
+    link: [{ xAxisIndex: 'all' }],
+    label: { backgroundColor: 'rgba(15,52,96,0.8)' }
+  },
+  grid: [
+    { left: '8%', right: '1%', top: '3%', height: '60%' },
+    { left: '8%', right: '1%', top: '72%', height: '22%' }
+  ],
+  xAxis: [
+    {
+      type: 'category',
+      data: dates,
+      gridIndex: 0,
+      boundaryGap: true,
+      axisLine: { lineStyle: { color: '#4a5568' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#a0aec0', fontSize: 11, formatter: v => v.slice(5) },
+      splitLine: { show: false }
+    },
+    {
+      type: 'category',
+      data: dates,
+      gridIndex: 1,
+      boundaryGap: true,
+      axisLine: { lineStyle: { color: '#4a5568' } },
+      axisTick: { show: false },
+      axisLabel: { show: false },
+      splitLine: { show: false }
+    }
+  ],
+  yAxis: [
+    {
+      type: 'value',
+      scale: true,
+      gridIndex: 0,
+      axisLine: { lineStyle: { color: '#4a5568' } },
+      axisLabel: { color: '#a0aec0', fontSize: 11, formatter: v => v.toFixed(0) },
+      splitLine: { lineStyle: { color: '#2d3748', type: 'dashed' } },
+      splitNumber: 6
+    },
+    {
+      type: 'value',
+      gridIndex: 1,
+      axisLine: { lineStyle: { color: '#4a5568' } },
+      axisLabel: { color: '#a0aec0', fontSize: 11, formatter: v => (v / 10000).toFixed(0) + '万' },
+      splitLine: { lineStyle: { color: '#2d3748', type: 'dashed' } }
+    }
+  ],
+  dataZoom: [
+    { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 },
+    { type: 'slider', xAxisIndex: [0, 1], start: 0, end: 100, height: 20, bottom: 8,
+      borderColor: '#4a5568', backgroundColor: '#1a1a2e',
+      fillerColor: 'rgba(233,69,96,0.15)',
+      textStyle: { color: '#a0aec0' },
+      handleStyle: { color: '#e94560' }
+    }
+  ],
+  series: [
+    // K线
+    {
+      name: 'K线',
+      type: 'candlestick',
+      data: kData,
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      itemStyle: {
+        color: upColor, color0: downColor,
+        borderColor: upBorderColor, borderColor0: downBorderColor
+      },
+      markPoint: {
+        symbol: 'pin',
+        symbolSize: 40,
+        label: { color: '#fff', fontSize: 11 },
+        data: [
+          { name: '月最高', type: 'max', valueDim: 'highest' },
+          { name: '月最低', type: 'min', valueDim: 'lowest' }
+        ]
+      }
+    },
+    // MA5
+    {
+      name: 'MA5', type: 'line', data: ma5, xAxisIndex: 0, yAxisIndex: 0,
+      smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: '#f6ad55' },
+      itemStyle: { color: '#f6ad55' }
+    },
+    // MA10
+    {
+      name: 'MA10', type: 'line', data: ma10, xAxisIndex: 0, yAxisIndex: 0,
+      smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: '#63b3ed' },
+      itemStyle: { color: '#63b3ed' }
+    },
+    // MA20
+    {
+      name: 'MA20', type: 'line', data: ma20, xAxisIndex: 0, yAxisIndex: 0,
+      smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: '#b794f4' },
+      itemStyle: { color: '#b794f4' }
+    },
+    // 成交量
+    {
+      name: '成交量',
+      type: 'bar',
+      data: volData.map((d, i) => ({ value: d[0], itemStyle: { color: d[1] === 1 ? upColor : downColor } })),
+      xAxisIndex: 1,
+      yAxisIndex: 1,
+      barWidth: '60%'
+    }
+  ],
+  legend: {
+    data: ['MA5', 'MA10', 'MA20'],
+    top: 5,
+    left: 'center',
+    textStyle: { color: '#a0aec0', fontSize: 12 },
+    itemWidth: 24, itemHeight: 2
+  },
+  graphic: [
+    { type: 'text', left: 'center', bottom: 42, style: { text: '成交量', fill: '#718096', fontSize: 11 } }
+  ]
+};
+
+chart.setOption(option);
+
+window.addEventListener('resize', function() { chart.resize(); });
+</script>
+</body>
+</html>
