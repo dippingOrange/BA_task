@@ -104,10 +104,10 @@ class HTMLToPDF(FPDF):
         self.ln(10)
     
     def write_body(self, text):
-        """正文段落 — 五号宋体、1.5倍行距、两端对齐、0段间距"""
+        """正文段落 — 五号宋体、1.5倍行距、左对齐（中文不适合 justify 拉伸空格）"""
         self.set_font(self.cn_font, '', self.BODY_SIZE)
         self.set_text_color(51, 51, 51)
-        self.multi_cell(self.w - self.l_margin - self.r_margin, self.LINE_H, text, align='J')
+        self.multi_cell(self.w - self.l_margin - self.r_margin, self.LINE_H, text, align='L')
     
     def write_bullet(self, text, bold_prefix=""):
         """项目符号 — 五号宋体、1.5倍行距、两端对齐"""
@@ -120,7 +120,7 @@ class HTMLToPDF(FPDF):
         saved_x = self.l_margin
         self.set_x(saved_x + 6)
         w = self.w - self.r_margin - self.get_x()
-        self.multi_cell(w, self.LINE_H, full_text, align='J')
+        self.multi_cell(w, self.LINE_H, full_text, align='L')
         self.set_x(saved_x)
     
     def write_table(self, headers, rows, col_widths=None):

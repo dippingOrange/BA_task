@@ -62,14 +62,15 @@ class IndicatorPDF(FPDF):
 
     def body(self, text):
         self.set_font(self.cn, '', self.BODY_SIZE); self.set_text_color(51, 51, 51)
-        self.multi_cell(self.w - self.l_margin - self.r_margin, self.LINE_H, text, align='J')
+        # 中文用左对齐，避免 justify 拉伸少数空格造成大缝隙
+        self.multi_cell(self.w - self.l_margin - self.r_margin, self.LINE_H, text, align='L')
 
     def bullet(self, text, bold_pre=""):
         self.set_font(self.cn, '', self.BODY_SIZE); self.set_text_color(51, 51, 51)
         full = '● ' + bold_pre + text
         self.set_x(self.l_margin + 5)
         w = self.w - self.r_margin - self.get_x()
-        self.multi_cell(w, self.LINE_H, full, align='J')
+        self.multi_cell(w, self.LINE_H, full, align='L')
         self.set_x(self.l_margin)
 
     def img(self, path, w=178):
