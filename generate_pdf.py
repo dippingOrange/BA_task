@@ -9,9 +9,16 @@ from html.parser import HTMLParser
 import os
 
 class HTMLToPDF(FPDF):
+    # 格式常量：宋体 五号(10.5pt) 1.5倍行距
+    BODY_SIZE = 10.5       # 五号字 = 10.5pt
+    LINE_H = 5.56          # 10.5pt * 1.5倍 = 15.75pt ≈ 5.56mm
+    SMALL_SIZE = 9         # 小五号，用于表格/脚注
+    SUBTITLE_SIZE = 12     # 小四，子标题
+    SECTION_SIZE = 16      # 三号，章节标题
+
     def __init__(self):
         super().__init__(orientation='P', unit='mm', format='A4')
-        # 尝试加载中文字体
+        # 加载宋体
         font_paths = [
             "C:/Windows/Fonts/simsun.ttc",
             "C:/Windows/Fonts/msyh.ttc",
@@ -20,8 +27,8 @@ class HTMLToPDF(FPDF):
         self.cn_font = None
         for fp in font_paths:
             if os.path.exists(fp):
-                self.add_font("CN", "", fp, uni=True)
-                self.add_font("CN", "B", fp, uni=True)
+                self.add_font("CN", "", fp)
+                self.add_font("CN", "B", fp)
                 self.cn_font = "CN"
                 print(f"使用字体: {fp}")
                 break
@@ -78,7 +85,7 @@ class HTMLToPDF(FPDF):
     def write_section_title(self, title):
         """章节标题"""
         self.ln(6)
-        self.set_font(self.cn_font, 'B', 16)
+        self.set_font(self.cn_font, 'B', self.SECTION_SIZE)
         self.set_text_color(26, 26, 46)
         self.cell(0, 12, title)
         # 下划线
@@ -86,72 +93,70 @@ class HTMLToPDF(FPDF):
         self.set_draw_color(192, 57, 43)
         self.set_line_width(0.6)
         self.line(self.l_margin + 1, y, self.l_margin + 61, y)
-        self.ln(14)
-    
-    def write_sub_title(self, title):
-        """子标题"""
-        self.ln(3)
-        self.set_font(self.cn_font, 'B', 13)
-        self.set_text_color(44, 62, 80)
-        self.cell(0, 10, title)
         self.ln(12)
     
+    def write_sub_title(self, title):
+        """子标题 — 小四加粗"""
+        self.ln(3)
+        self.set_font(self.cn_font, 'B', self.SUBTITLE_SIZE)
+        self.set_text_color(44, 62, 80)
+        self.cell(0, 10, title)
+        self.ln(10)
+    
     def write_body(self, text):
-        """正文段落"""
-        self.set_font(self.cn_font, '', 11)
+        """正文段落 — 五号宋体、1.5倍行距、两端对齐、0段间距"""
+        self.set_font(self.cn_font, '', self.BODY_SIZE)
         self.set_text_color(51, 51, 51)
-        self.multi_cell(0, 7, text)
-        self.ln(2)
+        self.multi_cell(self.w - self.l_margin - self.r_margin, self.LINE_H, text, align='J')
     
     def write_bullet(self, text, bold_prefix=""):
-        """项目符号"""
-        self.set_font(self.cn_font, '', 11)
+        """项目符号 — 五号宋体、1.5倍行距、两端对齐"""
+        self.set_font(self.cn_font, '', self.BODY_SIZE)
         self.set_text_color(51, 51, 51)
-        x = self.get_x()
-        self.cell(8, 7, '●')
-        if bold_prefix:
-            self.set_font(self.cn_font, 'B', 11)
-            self.cell(self.get_string_width(bold_prefix) + 2, 7, bold_prefix)
-            self.set_font(self.cn_font, '', 11)
-        self.multi_cell(0, 7, text)
-        self.ln(1)
+        # 用缩进 + 拼接文本的方式实现项目符号
+        bullet = '● '
+        full_text = bullet + bold_prefix + text
+        # 保存左边距，设置缩进
+        saved_x = self.l_margin
+        self.set_x(saved_x + 6)
+        w = self.w - self.r_margin - self.get_x()
+        self.multi_cell(w, self.LINE_H, full_text, align='J')
+        self.set_x(saved_x)
     
     def write_table(self, headers, rows, col_widths=None):
-        """简单表格"""
+        """简单表格 — 小五号字"""
         n_cols = len(headers)
         if col_widths is None:
             col_widths = [self.w / n_cols - 4] * n_cols
-        total_w = sum(col_widths)
         
         # 表头
-        self.set_font(self.cn_font, 'B', 10)
+        self.set_font(self.cn_font, 'B', self.SMALL_SIZE)
         self.set_fill_color(240, 240, 240)
         self.set_text_color(26, 26, 46)
         for i, h in enumerate(headers):
-            self.cell(col_widths[i], 9, h, border=1, fill=True, align='C' if i == 0 else 'L')
+            self.cell(col_widths[i], 8, h, border=1, fill=True, align='C' if i == 0 else 'L')
         self.ln()
         
         # 数据行
-        self.set_font(self.cn_font, '', 10)
+        self.set_font(self.cn_font, '', self.SMALL_SIZE)
         self.set_text_color(51, 51, 51)
         for row_idx, row in enumerate(rows):
             if row_idx % 2 == 0:
                 self.set_fill_color(250, 250, 250)
             else:
                 self.set_fill_color(255, 255, 255)
-            # 检查是否需要分页
             if self.get_y() > 250:
                 self.add_page()
-                self.set_font(self.cn_font, 'B', 10)
+                self.set_font(self.cn_font, 'B', self.SMALL_SIZE)
                 self.set_fill_color(240, 240, 240)
                 for i, h in enumerate(headers):
-                    self.cell(col_widths[i], 9, h, border=1, fill=True, align='C' if i == 0 else 'L')
+                    self.cell(col_widths[i], 8, h, border=1, fill=True, align='C' if i == 0 else 'L')
                 self.ln()
-                self.set_font(self.cn_font, '', 10)
+                self.set_font(self.cn_font, '', self.SMALL_SIZE)
             for i, cell in enumerate(row):
-                self.cell(col_widths[i], 8, str(cell), border=1, fill=True, align='C' if i == 0 else 'L')
+                self.cell(col_widths[i], 7, str(cell), border=1, fill=True, align='C' if i == 0 else 'L')
             self.ln()
-        self.ln(4)
+        self.ln(3)
 
     def write_disclaimer(self):
         """免责声明"""
@@ -159,25 +164,25 @@ class HTMLToPDF(FPDF):
         self.set_draw_color(243, 156, 18)
         self.set_fill_color(254, 249, 231)
         y0 = self.get_y()
-        self.rect(self.l_margin, y0, self.w - self.l_margin - self.r_margin, 42, 'DF')
-        self.set_xy(self.l_margin + 4, y0 + 4)
-        self.set_font(self.cn_font, 'B', 10)
+        self.rect(self.l_margin, y0, self.w - self.l_margin - self.r_margin, 40, 'DF')
+        self.set_xy(self.l_margin + 4, y0 + 3)
+        self.set_font(self.cn_font, 'B', self.SMALL_SIZE)
         self.set_text_color(125, 102, 8)
-        self.cell(0, 7, '⚠️ 免责声明：')
-        self.set_xy(self.l_margin + 4, y0 + 14)
-        self.set_font(self.cn_font, '', 9)
-        self.multi_cell(self.w - self.l_margin - self.r_margin - 8, 5.5,
+        self.cell(0, 6, '免责声明：')
+        self.set_xy(self.l_margin + 4, y0 + 11)
+        self.set_font(self.cn_font, '', self.SMALL_SIZE)
+        self.multi_cell(self.w - self.l_margin - self.r_margin - 8, 5,
             '本报告由 AI 大模型自动生成，仅供北京大学BA工作坊量化交易公益课程学习参考。'
             '报告中的所有分析、观点和建议均不构成任何形式的投资建议或承诺。'
             '股票市场存在较大风险，投资者应基于独立判断做出投资决策，盈亏自负。')
-        self.set_y(y0 + 46)
+        self.set_y(y0 + 44)
     
     def write_ai_tag(self):
         """AI 生成标识"""
-        self.ln(8)
-        self.set_font(self.cn_font, '', 9)
+        self.ln(6)
+        self.set_font(self.cn_font, '', self.SMALL_SIZE)
         self.set_text_color(153, 153, 153)
-        self.cell(0, 8, '🤖 本报告由 AI 自动生成 | 2026-07-04', align='C')
+        self.cell(0, 7, '本报告由 AI 自动生成 | 2026-07-04', align='C')
 
 
 def build_pdf():
@@ -353,23 +358,23 @@ def build_pdf():
     
     pdf.write_sub_title('4.2 投资建议')
     
-    pdf.set_font(pdf.cn_font, 'B', 11)
+    pdf.set_font(pdf.cn_font, 'B', pdf.BODY_SIZE)
     pdf.set_text_color(51, 51, 51)
-    pdf.cell(0, 8, '长期投资者：')
-    pdf.ln(10)
-    pdf.set_font(pdf.cn_font, '', 11)
+    pdf.cell(0, pdf.LINE_H, '长期投资者：')
+    pdf.ln(pdf.LINE_H)
+    pdf.set_font(pdf.cn_font, '', pdf.BODY_SIZE)
     pdf.write_body('贵州茅台作为A股核心资产，当前估值处于历史较低分位，PE仅18倍左右的茅台具有较高的长期配置价值。建议采取分批逢低建仓策略，关注 ¥1100-1200 区间作为较好的中长期布局窗口。不建议一次性重仓，保留部分资金应对可能的进一步回调。')
     
-    pdf.set_font(pdf.cn_font, 'B', 11)
-    pdf.cell(0, 8, '中短期交易者：')
-    pdf.ln(10)
-    pdf.set_font(pdf.cn_font, '', 11)
+    pdf.set_font(pdf.cn_font, 'B', pdf.BODY_SIZE)
+    pdf.cell(0, pdf.LINE_H, '中短期交易者：')
+    pdf.ln(pdf.LINE_H)
+    pdf.set_font(pdf.cn_font, '', pdf.BODY_SIZE)
     pdf.write_body('当前股价处于下降趋势中，技术面信号偏弱。建议等待以下信号出现再考虑介入：（1）股价放量站上 MA20（约 ¥1223）；（2）MACD 在零轴下方形成金叉后持续走强；（3）RSI 突破 50 中轴。若股价跌破 ¥1168（前低），建议止损观望。')
     
-    pdf.set_font(pdf.cn_font, 'B', 11)
-    pdf.cell(0, 8, '核心关注点：')
-    pdf.ln(10)
-    pdf.set_font(pdf.cn_font, '', 11)
+    pdf.set_font(pdf.cn_font, 'B', pdf.BODY_SIZE)
+    pdf.cell(0, pdf.LINE_H, '核心关注点：')
+    pdf.ln(pdf.LINE_H)
+    pdf.set_font(pdf.cn_font, '', pdf.BODY_SIZE)
     pdf.write_bullet('飞天茅台批价走势——是判断终端需求的最直接指标', '')
     pdf.write_bullet('季度业绩披露——关注营收和净利润增速是否企稳', '')
     pdf.write_bullet('分红政策——高分红是持有茅台的"底仓逻辑"之一', '')
