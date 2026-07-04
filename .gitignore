@@ -1,5 +1,5 @@
-# WorkBuddy local data
-.workbuddy/
+# WorkBuddy local data (memories stay local, skills are shared)
+.workbuddy/memory/
 
 # Python
 __pycache__/
